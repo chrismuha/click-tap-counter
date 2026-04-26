@@ -1,0 +1,32 @@
+{
+  "appId": "com.mcr.clicktapcounter",
+  "productName": "Click Tap Counter",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/**/*",
+    "main.js",
+    "package.json"
+  ],
+  "extraResources": [
+    {
+      "from": "assets",
+      "to": "assets"
+    }
+  ],
+  "forceCodeSigning": false,
+  "mac": {
+    "category": "public.app-category.utilities",
+    "identity": null,
+    "icon": "assets/icons/icon.icns"
+  },
+  "win": {
+    "target": "nsis",
+    "icon": "assets/icons/icon.ico"
+  },
+  "linux": {
+    "target": "AppImage",
+    "icon": "assets/icons/icon.png"
+  }
+}

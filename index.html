@@ -30,6 +30,10 @@
                 <div class="stat-label">Clicks / min</div>
                 <div class="stat-value" id="cpm">0</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-label">High record</div>
+                <div class="stat-value" id="highRecord">0</div>
+            </div>
         </div>
 
         <!-- Section: Tap area -->
@@ -38,6 +42,7 @@
         <!-- Section: Controls -->
         <div class="controls">
             <button class="btn" id="resetBtn">Reset</button>
+            <button class="btn" id="resetRecordBtn">Reset record</button>
             <button class="btn" id="lockBtn">Lock at 60s</button>
             <button class="btn" id="themeToggleBtn">Light mode</button>
         </div>
@@ -49,7 +54,7 @@
     </div>
 
     <!-- Section: Script -->
-    <script src="main.js"></script>
+    <script type="module" src="/renderer.js"></script>
 </body>
 
 </html>

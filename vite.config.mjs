@@ -5,6 +5,7 @@ export default defineConfig({
   server: {
     host: '127.0.0.1',
     port: 5186,
+    strictPort: true,
   },
   build: {
     target: 'esnext',

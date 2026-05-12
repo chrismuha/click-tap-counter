@@ -1,6 +1,5 @@
 {
   "name": "click-tap-counter",
-  "productName": "Click Tap Counter",
   "version": "1.0.0",
   "description": "Desktop click and tap speed counter built with Electron.",
   "main": "main.js",

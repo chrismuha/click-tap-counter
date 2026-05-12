@@ -87,7 +87,8 @@
       "target": "AppImage",
       "icon": "assets/icons"
     },
-    "forceCodeSigning": false
+    "forceCodeSigning": false,
+    "afterPack": "./scripts/electron-builder-after-pack.cjs"
   },
   "keywords": [],
   "author": {

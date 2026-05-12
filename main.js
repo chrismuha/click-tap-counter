@@ -38,6 +38,8 @@ function createWindow() {
     height: 760,
     minWidth: 760,
     minHeight: 620,
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : undefined,
+    trafficLightPosition: { x: 14, y: 14 },
     icon: iconPath,
     backgroundColor: '#111827',
     autoHideMenuBar: true,
@@ -52,6 +54,8 @@ function createWindow() {
   } else {
     win.loadFile(path.join(__dirname, 'dist', 'index.html'));
   }
+
+  win.maximize();
 
   const stopWatching = attachLiveReload({
     enabled: !app.isPackaged,

@@ -2,6 +2,7 @@
 const tapArea = document.getElementById("tapArea");
 const resetBtn = document.getElementById("resetBtn");
 const resetRecordBtn = document.getElementById("resetRecordBtn");
+const deductToggle = document.getElementById("deductToggle");
 const lockBtn = document.getElementById("lockBtn");
 const themeToggleBtn = document.getElementById("themeToggleBtn");
 const clickCountEl = document.getElementById("clickCount");
@@ -17,6 +18,7 @@ let timerId = null;
 let lockedAtSixty = false;
 let finished = false;
 let isLight = false;
+let isDeductMode = false;
 let clickTimes = [];
 
 // Section: Configuration constants
@@ -56,6 +58,27 @@ function updateHighRecord(currentCpm) {
 }
 
 highRecordEl.textContent = String(highRecord);
+
+// Section: Count direction helpers
+function updateDeductModeUi() {
+    tapArea.textContent = isDeductMode ? "DEDUCT TAP" : "CLICK/TAP HERE";
+    deductToggle.checked = isDeductMode;
+}
+
+function getTapDelta() {
+    return isDeductMode ? -1 : 1;
+}
+
+function applyTapDelta(delta) {
+    if (delta < 0 && clickCount === 0) {
+        hintText.textContent = "Count is already at zero.";
+        return false;
+    }
+
+    clickCount = Math.max(0, clickCount + delta);
+    clickCountEl.textContent = String(clickCount);
+    return true;
+}
 
 // Section: Free mode logic
 function updateFreeStats(eventTimeMs) {
@@ -137,13 +160,13 @@ function tickLockedMode() {
         hintText.textContent = "Sixty seconds reached. CPM is based on recent clicks/taps.";
     }
 
-    while (clickTimes.length > 0 && now - clickTimes[0] > lockedModeWindowMs) {
+    while (clickTimes.length > 0 && now - clickTimes[0].time > lockedModeWindowMs) {
         clickTimes.shift();
     }
 
-    const windowClickCount = clickTimes.length;
+    const windowClickCount = clickTimes.reduce((total, event) => total + event.delta, 0);
     const windowSec = lockedModeWindowMs / 1000;
-    const cpm = windowClickCount * (60 / windowSec);
+    const cpm = Math.max(0, windowClickCount * (60 / windowSec));
 
     timeElapsedEl.textContent = elapsedSec.toFixed(1);
     cpmEl.textContent = String(Math.round(cpm));
@@ -176,12 +199,17 @@ tapArea.addEventListener("click", () => {
         }
 
         const now = Date.now();
+        const delta = getTapDelta();
+        if (delta < 0 && clickCount === 0) {
+            hintText.textContent = "Count is already at zero.";
+            return;
+        }
+
         startLockedRunIfNeeded();
 
-        clickCount += 1;
-        clickCountEl.textContent = String(clickCount);
+        applyTapDelta(delta);
 
-        clickTimes.push(now);
+        clickTimes.push({ time: now, delta });
         tickLockedMode();
         return;
     }
@@ -191,10 +219,15 @@ tapArea.addEventListener("click", () => {
     }
 
     const now = Date.now();
+    const delta = getTapDelta();
+    if (delta < 0 && clickCount === 0) {
+        hintText.textContent = "Count is already at zero.";
+        return;
+    }
+
     startFreeRunIfNeeded();
 
-    clickCount += 1;
-    clickCountEl.textContent = String(clickCount);
+    applyTapDelta(delta);
     updateFreeStats(now);
 });
 
@@ -208,6 +241,15 @@ resetRecordBtn.addEventListener("click", () => {
     highRecord = 0;
     highRecordEl.textContent = "0";
     saveHighRecord();
+});
+
+// Section: Count direction toggle
+deductToggle.addEventListener("change", () => {
+    isDeductMode = deductToggle.checked;
+    updateDeductModeUi();
+    hintText.textContent = isDeductMode
+        ? "Deduct mode. Each tap subtracts one from the current count."
+        : "Add mode. Each tap adds one to the current count.";
 });
 
 // Section: Lock at sixty seconds toggle
@@ -231,3 +273,5 @@ themeToggleBtn.addEventListener("click", () => {
     document.body.classList.toggle("light-theme", isLight);
     themeToggleBtn.textContent = isLight ? "Dark mode" : "Light mode";
 });
+
+updateDeductModeUi();

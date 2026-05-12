@@ -232,7 +232,7 @@ h1 {
 .btn:active,
 .toggle-control:active {
     box-shadow: 0 1px 4px var(--shadow-tap);
-    transform: translateY(2px) scale(0.97);
+    transform: translateY(1px) scale(0.98);
     transition-duration: 0.03s;
 }
 

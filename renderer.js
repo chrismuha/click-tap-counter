@@ -21,6 +21,7 @@ let finished = false;
 let isLight = false;
 let isDeductMode = false;
 let clickTimes = [];
+let ignoreNextTapClick = false;
 
 // Section: Configuration constants
 const freeModeMinWindowSec = 5;
@@ -193,6 +194,10 @@ function resetAll() {
 }
 
 // Section: Click handling
+document.addEventListener("pointerdown", (event) => {
+    ignoreNextTapClick = controls.contains(event.target);
+}, true);
+
 controls.addEventListener("pointerdown", (event) => {
     event.stopPropagation();
 });
@@ -202,9 +207,12 @@ controls.addEventListener("click", (event) => {
 });
 
 tapArea.addEventListener("click", (event) => {
-    if (event.target !== tapArea) {
+    if (ignoreNextTapClick || event.target !== tapArea) {
+        ignoreNextTapClick = false;
         return;
     }
+
+    ignoreNextTapClick = false;
 
     if (lockedAtSixty) {
         if (finished) {

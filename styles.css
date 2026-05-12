@@ -114,6 +114,8 @@ h1 {
     width: 100%;
     flex: 1 1 auto;
     min-height: 0;
+    position: relative;
+    z-index: 1;
     border-radius: 0;
     border: none;
     background: var(--accent);
@@ -138,6 +140,8 @@ h1 {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 8px;
+    position: relative;
+    z-index: 2;
 }
 
 .btn,

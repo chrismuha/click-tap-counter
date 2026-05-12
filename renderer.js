@@ -1,5 +1,6 @@
 // Section: DOM element references
 const tapArea = document.getElementById("tapArea");
+const controls = document.querySelector(".controls");
 const resetBtn = document.getElementById("resetBtn");
 const resetRecordBtn = document.getElementById("resetRecordBtn");
 const deductToggle = document.getElementById("deductToggle");
@@ -192,7 +193,19 @@ function resetAll() {
 }
 
 // Section: Click handling
-tapArea.addEventListener("click", () => {
+controls.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+});
+
+controls.addEventListener("click", (event) => {
+    event.stopPropagation();
+});
+
+tapArea.addEventListener("click", (event) => {
+    if (event.target !== tapArea) {
+        return;
+    }
+
     if (lockedAtSixty) {
         if (finished) {
             return;

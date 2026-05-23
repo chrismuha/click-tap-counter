@@ -2,6 +2,7 @@ const { app, BrowserWindow, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { attachLiveReload } = require('../_shared/electron-live-reload.cjs');
+const { loadRenderer } = require('./startup-mode.cjs');
 
 if (require('electron-squirrel-startup')) {
   app.quit();
@@ -49,11 +50,10 @@ function createWindow() {
     },
   });
 
-  if (process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL) {
-    win.loadURL(process.env.VITE_DEV_SERVER_URL || 'http://localhost:5186/');
-  } else {
-    win.loadFile(path.join(__dirname, 'dist', 'index.html'));
-  }
+  loadRenderer(win, {
+    defaultCloudUrl: 'http://localhost:5186/',
+    localFile: path.join(__dirname, 'dist', 'index.html'),
+  });
 
   if (!app.isPackaged) {
     win.webContents.on('before-input-event', (event, input) => {

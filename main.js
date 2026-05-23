@@ -1,7 +1,12 @@
 const { app, BrowserWindow, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { attachLiveReload } = require('../_shared/electron-live-reload.cjs');
+let attachLiveReload = () => () => {};
+try {
+  ({ attachLiveReload } = require('../_shared/electron-live-reload.cjs'));
+} catch {
+  // Shared live-reload helper is optional; continue without it.
+}
 const { loadRenderer } = require('./startup-mode.cjs');
 
 if (require('electron-squirrel-startup')) {

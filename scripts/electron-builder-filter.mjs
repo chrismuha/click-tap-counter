@@ -60,7 +60,12 @@ if (fixElectronBuilderDep0190(projectRoot)) {
   process.stdout.write("  • patched electron-builder to avoid Node DEP0190\n");
 }
 const projectOutputDir = path.resolve(projectRoot, "release");
-const tempOutputDir = path.join("/private", "tmp", "profit-pulse-electron-builder-output");
+const projectPackage = JSON.parse(fs.readFileSync(path.join(projectRoot, "package.json"), "utf8"));
+const outputSlug = String(projectPackage.build?.productName || projectPackage.name || "electron-app")
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, "-")
+  .replace(/^-|-$/g, "");
+const tempOutputDir = path.join("/private", "tmp", `${outputSlug}-electron-builder-output`);
 const rawUserArgs = process.argv.slice(2);
 const ignoredArgs = rawUserArgs.filter((arg) => !arg.startsWith("-") && arg.includes(":"));
 const userArgs = rawUserArgs.filter((arg) => !ignoredArgs.includes(arg));
@@ -100,7 +105,7 @@ function shouldCopyArtifact(entryName) {
       entryName === "mac" ||
       entryName === "mac-x64" ||
       entryName.includes("x64") ||
-      (!entryName.includes("arm64") && !entryName.includes("universal") && /^ProfitPulse-.*\.(dmg|zip)(\.blockmap)?$/.test(entryName))
+      (!entryName.includes("arm64") && !entryName.includes("universal") && /\.(dmg|zip)(\.blockmap)?$/.test(entryName))
     );
   }
 
@@ -110,7 +115,7 @@ function shouldCopyArtifact(entryName) {
 function isMacBuildArtifact(entryName) {
   if (entryName === "builder-debug.yml" || entryName === "latest-mac.yml") return true;
   if (entryName === "mac" || entryName === "mac-arm64" || entryName === "mac-universal" || entryName === "mac-x64") return true;
-  if (/^ProfitPulse-.*\.(dmg|zip|blockmap)$/.test(entryName)) return true;
+  if (/\.dmg(\.blockmap)?$/.test(entryName) || /-mac\.zip(\.blockmap)?$/.test(entryName)) return true;
   return false;
 }
 

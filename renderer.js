@@ -35,6 +35,7 @@ const timedHighRecordStorageKey = "clickTapCounterTimedHighRecord";
 const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
 let highRecord = loadHighRecord(highRecordStorageKey);
 let timedHighRecord = loadHighRecord(timedHighRecordStorageKey);
+let recordToBeat = highRecord;
 
 function getFocusableElements() {
     return Array.from(document.querySelectorAll(FOCUSABLE_SELECTOR)).filter((element) => {
@@ -123,27 +124,30 @@ function updateRecordProgress(currentScore) {
     }
 
     const score = Math.max(0, Math.round(currentScore));
-    const record = lockedAtSixty ? timedHighRecord : highRecord;
+    const record = recordToBeat;
     const unit = lockedAtSixty ? "clicks" : "CPM";
-    const percentage = record > 0 ? Math.min(100, score / record * 100) : 0;
+    const percentage = record > 0 ? Math.min(100, score / record * 100) : score > 0 ? 100 : 0;
     const emptyText = lockedAtSixty
         ? "Complete a 60-second run to set a high score."
         : "Set a high score first to enjoy this feature.";
     recordProgressFill.style.width = `${percentage}%`;
     recordProgress.setAttribute("aria-valuenow", String(Math.round(percentage)));
-    recordProgress.setAttribute("aria-valuetext", record > 0
+    const progressText = score > record
+        ? `High score reached! New high score: ${score} ${unit}`
+        : record > 0 && score === record
+            ? `High score reached! ${record} ${unit}`
+            : record > 0
+                ? `${score} / ${record} ${unit} · ${Math.round(percentage)}%`
+                : emptyText;
+    recordProgress.setAttribute("aria-valuetext", score >= record && score > 0 ? progressText : record > 0
         ? `${score} of ${record} ${lockedAtSixty ? "clicks in 60 seconds" : "clicks per minute"}`
         : emptyText);
-    recordProgressText.textContent = record > 0
-        ? percentage >= 100
-            ? `High score reached! ${record} ${unit}`
-            : `${score} / ${record} ${unit} · ${Math.round(percentage)}%`
-        : emptyText;
+    recordProgressText.textContent = progressText;
 }
 
 // Section: Count direction helpers
 function updateDeductModeUi() {
-    tapArea.textContent = isDeductMode ? "DEDUCT TAP" : "CLICK/TAP HERE";
+    tapArea.textContent = finished ? "Play again" : isDeductMode ? "DEDUCT TAP" : "CLICK/TAP HERE";
     deductToggle.checked = isDeductMode;
 }
 
@@ -245,7 +249,8 @@ function tickLockedMode() {
             clearInterval(timerId);
             timerId = null;
         }
-        hintText.textContent = `Sixty seconds reached. Final score: ${clickCount} clicks. Press Reset to play again.`;
+        updateDeductModeUi();
+        hintText.textContent = `Sixty seconds reached. Final score: ${clickCount} clicks. Select Play again for a new game.`;
     }
 
     while (clickTimes.length > 0 && now - clickTimes[0].time > lockedModeWindowMs) {
@@ -267,6 +272,8 @@ function resetAll() {
     startTime = null;
     finished = false;
     clickTimes = [];
+    recordToBeat = lockedAtSixty ? timedHighRecord : highRecord;
+    updateDeductModeUi();
 
     clickCountEl.textContent = "0";
     timeElapsedEl.textContent = "0.0";
@@ -290,6 +297,11 @@ controls.addEventListener("click", (event) => {
 });
 
 tapArea.addEventListener("click", () => {
+    if (finished) {
+        isDeductMode = false;
+        resetAll();
+        return;
+    }
     if (lockedAtSixty) {
         // Enforce the deadline even if the interval was delayed.
         if (startTime !== null) {
@@ -313,10 +325,6 @@ tapArea.addEventListener("click", () => {
         clickTimes.push({ time: now, delta });
         tickLockedMode();
         return;
-    }
-
-    if (finished) {
-        resetAll();
     }
 
     const now = Date.now();
@@ -346,6 +354,7 @@ resetRecordBtn.addEventListener("click", () => {
     }
     updateHighRecordUi();
     saveHighRecord();
+    recordToBeat = 0;
     updateRecordProgress(0);
 });
 
@@ -353,6 +362,7 @@ resetRecordBtn.addEventListener("click", () => {
 deductToggle.addEventListener("change", () => {
     isDeductMode = deductToggle.checked;
     updateDeductModeUi();
+    if (finished) return;
     hintText.textContent = isDeductMode
         ? "Deduct mode. Each tap subtracts one from the current count."
         : "Add mode. Each tap adds one to the current count.";

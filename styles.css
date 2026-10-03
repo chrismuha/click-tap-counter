@@ -109,6 +109,41 @@ h1 {
     font-weight: 600;
 }
 
+/* Section: High score progress */
+.record-progress {
+    flex-shrink: 0;
+    text-align: left;
+}
+
+.record-progress-label,
+.record-progress-text {
+    font-size: 9pt;
+    color: var(--subtitle);
+}
+
+.record-progress-track {
+    height: 14px;
+    margin: 6px 0;
+    overflow: hidden;
+    border: 1px solid var(--btn-border);
+    border-radius: 999px;
+    background: var(--bg);
+}
+
+.record-progress-fill {
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--accent);
+    transition: width 0.1s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .record-progress-fill {
+        transition: none;
+    }
+}
+
 /* Section: Tap button */
 #tapArea {
     width: 100%;
@@ -125,12 +160,11 @@ h1 {
     padding: 12px;
     cursor: pointer;
     touch-action: manipulation;
-    transition: transform 0.05s ease, box-shadow 0.05s ease, background 0.2s ease;
+    transition: box-shadow 0.05s ease, background 0.2s ease;
     box-shadow: 0 10px 20px var(--shadow-strong);
 }
 
 #tapArea:active {
-    transform: scale(0.97);
     box-shadow: 0 4px 10px var(--shadow-tap);
     background: var(--accent-active);
 }

@@ -31,9 +31,19 @@
                 <div class="stat-value" id="cpm">0</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">High record</div>
+                <div class="stat-label" id="highRecordLabel">High record (CPM)</div>
                 <div class="stat-value" id="highRecord">0</div>
             </div>
+        </div>
+
+        <div class="record-progress">
+            <div class="record-progress-label" id="recordProgressLabel">High score progress</div>
+            <div class="record-progress-track" id="recordProgress" role="progressbar"
+                aria-labelledby="recordProgressLabel" aria-describedby="recordProgressText"
+                aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="record-progress-fill" id="recordProgressFill"></div>
+            </div>
+            <div class="record-progress-text" id="recordProgressText">Set a high score first to enjoy this feature.</div>
         </div>
 
         <!-- Section: Tap area -->

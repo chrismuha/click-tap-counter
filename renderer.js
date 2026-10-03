@@ -10,6 +10,10 @@ const clickCountEl = document.getElementById("clickCount");
 const timeElapsedEl = document.getElementById("timeElapsed");
 const cpmEl = document.getElementById("cpm");
 const highRecordEl = document.getElementById("highRecord");
+const highRecordLabel = document.getElementById("highRecordLabel");
+const recordProgress = document.getElementById("recordProgress");
+const recordProgressFill = document.getElementById("recordProgressFill");
+const recordProgressText = document.getElementById("recordProgressText");
 const hintText = document.getElementById("hintText");
 
 // Section: State variables
@@ -21,15 +25,16 @@ let finished = false;
 let isLight = false;
 let isDeductMode = false;
 let clickTimes = [];
-let ignoreNextTapClick = false;
 
 // Section: Configuration constants
 const freeModeMinWindowSec = 5;
 const lockedModeWindowMs = 5000;
 const lockedModeTotalDurationSec = 60;
 const highRecordStorageKey = "clickTapCounterHighRecord";
+const timedHighRecordStorageKey = "clickTapCounterTimedHighRecord";
 const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
-let highRecord = loadHighRecord();
+let highRecord = loadHighRecord(highRecordStorageKey);
+let timedHighRecord = loadHighRecord(timedHighRecordStorageKey);
 
 function getFocusableElements() {
     return Array.from(document.querySelectorAll(FOCUSABLE_SELECTOR)).filter((element) => {
@@ -71,9 +76,9 @@ function handleTabAndEscapeFocus(event) {
 document.addEventListener("keydown", handleTabAndEscapeFocus);
 
 // Section: High record helpers
-function loadHighRecord() {
+function loadHighRecord(storageKey) {
     try {
-        const storedValue = Number(localStorage.getItem(highRecordStorageKey));
+        const storedValue = Number(localStorage.getItem(storageKey));
         return Number.isFinite(storedValue) && storedValue > 0 ? Math.round(storedValue) : 0;
     } catch {
         return 0;
@@ -82,7 +87,8 @@ function loadHighRecord() {
 
 function saveHighRecord() {
     try {
-        localStorage.setItem(highRecordStorageKey, String(highRecord));
+        localStorage.setItem(lockedAtSixty ? timedHighRecordStorageKey : highRecordStorageKey,
+            String(lockedAtSixty ? timedHighRecord : highRecord));
     } catch {
         // Storage can be unavailable in restricted browser contexts.
     }
@@ -99,7 +105,41 @@ function updateHighRecord(currentCpm) {
     saveHighRecord();
 }
 
-highRecordEl.textContent = String(highRecord);
+function updateHighRecordUi() {
+    highRecordEl.textContent = String(lockedAtSixty ? timedHighRecord : highRecord);
+    if (highRecordLabel) {
+        highRecordLabel.textContent = lockedAtSixty ? "High record (clicks in 60s)" : "High record (CPM)";
+    }
+}
+
+updateHighRecordUi();
+updateRecordProgress(0);
+
+function updateRecordProgress(currentScore) {
+    // A cached page may load the updated script before the new meter markup.
+    // Keep counting available while the page and script versions catch up.
+    if (!recordProgress || !recordProgressFill || !recordProgressText) {
+        return;
+    }
+
+    const score = Math.max(0, Math.round(currentScore));
+    const record = lockedAtSixty ? timedHighRecord : highRecord;
+    const unit = lockedAtSixty ? "clicks" : "CPM";
+    const percentage = record > 0 ? Math.min(100, score / record * 100) : 0;
+    const emptyText = lockedAtSixty
+        ? "Complete a 60-second run to set a high score."
+        : "Set a high score first to enjoy this feature.";
+    recordProgressFill.style.width = `${percentage}%`;
+    recordProgress.setAttribute("aria-valuenow", String(Math.round(percentage)));
+    recordProgress.setAttribute("aria-valuetext", record > 0
+        ? `${score} of ${record} ${lockedAtSixty ? "clicks in 60 seconds" : "clicks per minute"}`
+        : emptyText);
+    recordProgressText.textContent = record > 0
+        ? percentage >= 100
+            ? `High score reached! ${record} ${unit}`
+            : `${score} / ${record} ${unit} · ${Math.round(percentage)}%`
+        : emptyText;
+}
 
 // Section: Count direction helpers
 function updateDeductModeUi() {
@@ -137,6 +177,7 @@ function updateFreeStats(eventTimeMs) {
     timeElapsedEl.textContent = rawSec.toFixed(1);
     cpmEl.textContent = String(Math.round(cpm));
     updateHighRecord(cpm);
+    updateRecordProgress(cpm);
 }
 
 function tickFreeMode() {
@@ -194,12 +235,17 @@ function tickLockedMode() {
 
     if (elapsedSec >= lockedModeTotalDurationSec) {
         elapsedSec = lockedModeTotalDurationSec;
+        if (!finished && clickCount > timedHighRecord) {
+            timedHighRecord = clickCount;
+            saveHighRecord();
+            updateHighRecordUi();
+        }
         finished = true;
         if (timerId) {
             clearInterval(timerId);
             timerId = null;
         }
-        hintText.textContent = "Sixty seconds reached. CPM is based on recent clicks/taps.";
+        hintText.textContent = `Sixty seconds reached. Final score: ${clickCount} clicks. Press Reset to play again.`;
     }
 
     while (clickTimes.length > 0 && now - clickTimes[0].time > lockedModeWindowMs) {
@@ -212,7 +258,7 @@ function tickLockedMode() {
 
     timeElapsedEl.textContent = elapsedSec.toFixed(1);
     cpmEl.textContent = String(Math.round(cpm));
-    updateHighRecord(cpm);
+    updateRecordProgress(clickCount);
 }
 
 // Section: Shared reset helpers
@@ -225,6 +271,7 @@ function resetAll() {
     clickCountEl.textContent = "0";
     timeElapsedEl.textContent = "0.0";
     cpmEl.textContent = "0";
+    updateRecordProgress(0);
     hintText.textContent = "First click/tap starts the timer. CPM updates live.";
 
     if (timerId) {
@@ -234,10 +281,6 @@ function resetAll() {
 }
 
 // Section: Click handling
-document.addEventListener("pointerdown", (event) => {
-    ignoreNextTapClick = controls.contains(event.target);
-}, true);
-
 controls.addEventListener("pointerdown", (event) => {
     event.stopPropagation();
 });
@@ -246,15 +289,12 @@ controls.addEventListener("click", (event) => {
     event.stopPropagation();
 });
 
-tapArea.addEventListener("click", (event) => {
-    if (ignoreNextTapClick || event.target !== tapArea) {
-        ignoreNextTapClick = false;
-        return;
-    }
-
-    ignoreNextTapClick = false;
-
+tapArea.addEventListener("click", () => {
     if (lockedAtSixty) {
+        // Enforce the deadline even if the interval was delayed.
+        if (startTime !== null) {
+            tickLockedMode();
+        }
         if (finished) {
             return;
         }
@@ -299,9 +339,14 @@ resetBtn.addEventListener("click", () => {
 
 // Section: High record reset handling
 resetRecordBtn.addEventListener("click", () => {
-    highRecord = 0;
-    highRecordEl.textContent = "0";
+    if (lockedAtSixty) {
+        timedHighRecord = 0;
+    } else {
+        highRecord = 0;
+    }
+    updateHighRecordUi();
     saveHighRecord();
+    updateRecordProgress(0);
 });
 
 // Section: Count direction toggle
@@ -321,6 +366,7 @@ lockBtn.addEventListener("click", () => {
     lockBtn.textContent = lockedAtSixty ? "Free mode" : "Lock at 60s";
 
     if (wasLocked !== lockedAtSixty) {
+        updateHighRecordUi();
         resetAll();
         hintText.textContent = lockedAtSixty
             ? "Sixty second mode. Click/Tap to begin. CPM will fall toward zero if you stop clicking."

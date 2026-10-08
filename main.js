@@ -36,7 +36,7 @@ function resolveIconPath(fileName) {
 function createWindow() {
   const iconFileName = process.platform === 'darwin' ? 'icon.icns' : 'icon.png';
   const iconPath = resolveIconPath(iconFileName);
-  const dockIconPath = resolveIconPath('icon.png');
+  const dockIconPath = resolveIconPath('icon-mac-standard.png');
 
   if (process.platform === 'darwin' && app.dock?.setIcon && fs.existsSync(dockIconPath)) {
     const dockIcon = nativeImage.createFromPath(dockIconPath);
